@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "factor-investing"
+version = "0.1.0"
+description = ""
+authors = ["Akash Desarda <desardaakash@gmail.com>"]
+packages = [
+    { include = "investing" },
+]
+#readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = { extras = ["standard"], version = "^0.115.5" }
+yfinance = "^0.2.50"
+notebook = "^7.2.2"
+polars = "^1.16.0"
+sqlglot = "^25.32.1"
+pydantic = "^2.10.2"
+litestar = {extras = ["standard"], version = "^2.13.0"}
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
