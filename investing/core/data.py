@@ -21,7 +21,6 @@ class StockData:
     """
 
     ticker: str | list[str]
-    auto_nse: bool = True
 
     TickerData = namedtuple("TickerData", [])
 
@@ -36,34 +35,57 @@ class StockData:
             )
 
     @property
-    def get_tickers_handler(self) -> yf.Ticker | yf.Tickers:
+    def ticker_handler(self) -> yf.Ticker | yf.Tickers:
         return (
             yf.Ticker(self.ticker)
             if isinstance(self.ticker, str)
             else yf.Tickers(" ".join(self.ticker))
         )
 
-    def download_ticker_history(
+    def get_ticker_info(self) -> Type[TickerData]:
+        if isinstance(self.ticker_handler, yf.Ticker):
+            setattr(
+                self._ticker_data,
+                self._remove_exchange_symbol(self.ticker),
+                self.ticker_handler.get_info(),
+            )
+        else:
+            for tick in self.ticker:
+                setattr(
+                    self._ticker_data,
+                    self._remove_exchange_symbol(tick),
+                    self.ticker_handler.tickers[tick].get_info(),
+                )
+        return self._ticker_data
+
+    def get_ticker_history(
         self,
         period: Period = Period.MAX,
         interval: Interval = Interval.ONE_DAY,
         start: str | date | None = None,
         end: str | date | None = None,
     ) -> Type[TickerData]:
-        result = self.get_tickers_handler.download(
-            period=period.value,
-            interval=interval.value,
-            start=start,
-            end=end,
-            group_by="ticker",
-        )
         if isinstance(self.ticker, str):
+            result = self.ticker_handler.history(
+                period=period.value,
+                interval=interval.value,
+                start=start,
+                end=end,
+                # group_by="ticker", # NOTE - not present in single `Ticker` object
+            )
             setattr(
                 self._ticker_data,
                 self._remove_exchange_symbol(self.ticker),
                 pl.from_pandas(result),
             )
         else:
+            result = self.ticker_handler.history(
+                period=period.value,
+                interval=interval.value,
+                start=start,
+                end=end,
+                group_by="ticker",
+            )
             for t in self.ticker:
                 setattr(
                     self._ticker_data,
