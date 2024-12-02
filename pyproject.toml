@@ -17,10 +17,12 @@ polars = "^1.16.0"
 sqlglot = "^25.32.1"
 pydantic = "^2.10.2"
 litestar = {extras = ["standard"], version = "^2.13.0"}
+orjson = "^3.10.12"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
 
 [build-system]
 requires = ["poetry-core"]

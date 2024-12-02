@@ -1,5 +1,1 @@
-from litestar import Router
-
-from .tickers_controllers import TickerDataController
-
-per_security_router = Router("per-security", route_handlers=[TickerDataController])
+from investing.api.routers.per_security.tickers import router as tickers_router

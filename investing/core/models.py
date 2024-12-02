@@ -1,6 +1,13 @@
-import re
-from datetime import datetime
+from datetime import date
 from enum import Enum
+
+from pydantic import BaseModel, Field
+
+
+class APITags(Enum):
+    root = "Root"
+    per_security = "Per Security"
+    bulk = "Bulk"
 
 
 class Period(Enum):
@@ -33,29 +40,71 @@ class Interval(Enum):
     THREE_MONTHS = "3mo"
 
 
-class DateString:
-    date_format = "%Y-%m-%d"
-    regex_pattern = r"^\d{4}-\d{2}-\d{2}$"
+class StockExchange(Enum):
+    NSE = "NSE"
+    BSE = "BSE"
+    TSE = "TSE"
+    LSE = "LSE"
+    HKEX = "HKEX"
+    XETRA = "XETRA"
+    SSE = "SSE"
+    ASX = "ASX"
+    NASDAQ = "NASDAQ"
+    NYSE = "NYSE"
+    BMV = "BMV"
+    TSX = "TSX"
+    EURONEXT = "EURONEXT"
 
-    def __init__(self, date_str: str):
-        if not self.is_valid_date(date_str):
-            raise ValueError(
-                f"Date string '{date_str}' is not in the yyyy-mm-dd format."
-            )
-        self.date_str = date_str
 
-    @classmethod
-    def is_valid_date(cls, date_str: str) -> bool:
-        if not re.match(cls.regex_pattern, date_str):
-            return False
-        try:
-            datetime.strptime(date_str, cls.date_format)
-            return True
-        except ValueError:
-            return False
+class StockExchangeYahooIdentifier(Enum):
+    NSE = ".NS"
+    BSE = ".BO"
+    TSE = ".T"
+    LSE = ".L"
+    HKEX = ".H"
+    XETRA = ".X"
+    SSE = ".S"
+    ASX = ".A"
+    NASDAQ = ".N"
+    NYSE = ".Y"
+    BMV = ".M"
+    TSX = ".C"
+    EURONEXT = ".F"
 
-    def __str__(self):
-        return self.date_str
 
-    def to_date(self):
-        return datetime.strptime(self.date_str, self.date_format).date()
+class StockExchangeFullName(Enum):
+    NSE = "National Stock Exchange of India"
+    BSE = "Bombay Stock Exchange"
+    TSE = "Tokyo Stock Exchange"
+    LSE = "London Stock Exchange"
+    HKEX = "Hong Kong Stock Exchange"
+    XETRA = "Frankfurt Stock Exchange"
+    SSE = "Shanghai Stock Exchange"
+    ASX = "Australian Securities Exchange"
+    NASDAQ = "NASDAQ Stock Exchange"
+    NYSE = "New York Stock Exchange"
+    BMV = "Mexico Stock Exchange"
+    TSX = "Toronto Stock Exchange"
+    EURONEXT = "Euronext"
+
+
+class TickerHistoryQuery(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    interval: Interval = Field(
+        Interval.ONE_DAY, description="Day interval between historical data points"
+    )
+    period: Period = Field(
+        Period.ONE_DAY,
+        description="Day period between historical data points. This is mutually exclusive with `start_date` and `end_date`",
+    )
+    start_date: date = Field(
+        None,
+        description="Start date for historical data points. This is mutually exclusive with `period`",
+        examples=["2024-01-01", "2020-12-31"],
+    )
+    end_date: date = Field(
+        None,
+        description="End date for historical data points. This is mutually exclusive with `period`",
+        examples=["2024-02-01", "2021-01-31"],
+    )
