@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "factor-investing"
-version = "0.1.0"
+version = "0.3.1"
 description = ""
 authors = ["Akash Desarda <desardaakash@gmail.com>"]
 packages = [
@@ -12,15 +12,13 @@ packages = [
 python = "^3.12"
 fastapi = { extras = ["standard"], version = "^0.115.5" }
 yfinance = "^0.2.50"
-notebook = "^7.2.2"
 polars = "^1.16.0"
 sqlglot = "^25.32.1"
 pydantic = "^2.10.2"
-litestar = {extras = ["standard"], version = "^2.13.0"}
-orjson = "^3.10.12"
 
 
 [tool.poetry.group.dev.dependencies]
+notebook = "^7.2.2"
 pytest = "^8.3.3"
 pytest-asyncio = "^0.24.0"
 
