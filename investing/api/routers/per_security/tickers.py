@@ -1,17 +1,19 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
-from fastapi.responses import ORJSONResponse
 
-from investing.api.dependency.utils import TickerIdentifier, yahoo_finance_aware_ticker
+from investing.api.dependency.utils import yahoo_finance_aware_ticker
 from investing.core.data import StockData
 from investing.core.models import (
     APITags,
+    ExchangeTickers,
+    ExchangeTickersHistory,
     StockExchangeFullName,
     TickerHistoryQuery,
+    YahooTickerIdentifier,
 )
 
-router = APIRouter(prefix="/per-security", tags=[APITags.per_security])
+router = APIRouter(prefix="/api/per-security", tags=[APITags.per_security])
 
 
 @router.get("/")
@@ -20,7 +22,7 @@ async def list_exchange() -> dict[str, str]:
     return {exchange.name.lower(): exchange.value for exchange in StockExchangeFullName}
 
 
-@router.get("/{exchange}")
+@router.get("/{exchange}", response_model=ExchangeTickers)
 async def list_ticker(
     exchange: Annotated[
         str,
@@ -37,7 +39,7 @@ async def list_ticker(
 @router.get("/{exchange}/{ticker}")
 async def ticker_information(
     # exchange: Annotated[StockExchange, Path(description="Exchange symbol to which ticker belongs")],
-    ticker: Annotated[TickerIdentifier, Depends(yahoo_finance_aware_ticker)],
+    ticker: Annotated[YahooTickerIdentifier, Depends(yahoo_finance_aware_ticker)],
 ) -> dict:
     """Get given `Ticker` information"""
     stock_data = StockData(f"{ticker.symbol}{ticker.exch_id}")
@@ -45,11 +47,11 @@ async def ticker_information(
     return getattr(result, ticker.symbol)
 
 
-@router.get("/{exchange}/{ticker}/history", response_class=ORJSONResponse)
+@router.get("/{exchange}/{ticker}/history")
 async def ticker_history(
-    ticker: Annotated[TickerIdentifier, Depends(yahoo_finance_aware_ticker)],
+    ticker: Annotated[YahooTickerIdentifier, Depends(yahoo_finance_aware_ticker)],
     query_param: Annotated[TickerHistoryQuery, Query()],
-):
+) -> ExchangeTickersHistory:
     """Get stock history data for given `Ticker`"""
     stock_data = StockData(f"{ticker.symbol}{ticker.exch_id}")
     result = stock_data.get_ticker_history(
@@ -58,4 +60,8 @@ async def ticker_history(
         start=query_param.start_date,
         end=query_param.end_date,
     )
-    return ORJSONResponse(getattr(result, ticker.symbol).to_dicts())
+    return ExchangeTickersHistory(
+        ticker=ticker.symbol,
+        exchange=ticker.exchange,
+        history=getattr(result, ticker.symbol).to_dicts(),
+    )
