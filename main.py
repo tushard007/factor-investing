@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from investing.api.routers import per_security
+from investing.api.routers import bulk, per_security
 from investing.core.models import APITags
 
 app = FastAPI(title="Factor Investing API", version="0.1")
@@ -13,3 +13,4 @@ async def root():
 
 
 app.include_router(per_security.tickers_router)
+app.include_router(bulk.tickers_router)

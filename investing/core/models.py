@@ -41,51 +41,84 @@ class Interval(Enum):
 
 
 class StockExchange(Enum):
-    NSE = "NSE"
-    BSE = "BSE"
-    TSE = "TSE"
-    LSE = "LSE"
-    HKEX = "HKEX"
-    XETRA = "XETRA"
-    SSE = "SSE"
-    ASX = "ASX"
-    NASDAQ = "NASDAQ"
-    NYSE = "NYSE"
-    BMV = "BMV"
-    TSX = "TSX"
-    EURONEXT = "EURONEXT"
+    nse = "nse"
+    bse = "bse"
+    tse = "tse"
+    lse = "lse"
+    hkex = "hkex"
+    xetra = "xetra"
+    sse = "sse"
+    asx = "asx"
+    nasdaq = "nasdaq"
+    nyse = "nyse"
+    bmv = "bmv"
+    tsx = "tsx"
+    euronext = "euronext"
 
 
 class StockExchangeYahooIdentifier(Enum):
-    NSE = ".NS"
-    BSE = ".BO"
-    TSE = ".T"
-    LSE = ".L"
-    HKEX = ".H"
-    XETRA = ".X"
-    SSE = ".S"
-    ASX = ".A"
-    NASDAQ = ".N"
-    NYSE = ".Y"
-    BMV = ".M"
-    TSX = ".C"
-    EURONEXT = ".F"
+    nse = ".NS"
+    bse = ".BO"
+    tse = ".T"
+    lse = ".L"
+    hkex = ".H"
+    xetra = ".X"
+    sse = ".S"
+    asx = ".A"
+    nasdaq = ".N"
+    nyse = ".Y"
+    bmv = ".M"
+    tsx = ".C"
+    euronext = ".F"
 
 
 class StockExchangeFullName(Enum):
-    NSE = "National Stock Exchange of India"
-    BSE = "Bombay Stock Exchange"
-    TSE = "Tokyo Stock Exchange"
-    LSE = "London Stock Exchange"
-    HKEX = "Hong Kong Stock Exchange"
-    XETRA = "Frankfurt Stock Exchange"
-    SSE = "Shanghai Stock Exchange"
-    ASX = "Australian Securities Exchange"
-    NASDAQ = "NASDAQ Stock Exchange"
-    NYSE = "New York Stock Exchange"
-    BMV = "Mexico Stock Exchange"
-    TSX = "Toronto Stock Exchange"
-    EURONEXT = "Euronext"
+    nse = "National Stock Exchange of India"
+    bse = "Bombay Stock Exchange"
+    tse = "Tokyo Stock Exchange"
+    lse = "London Stock Exchange"
+    hkex = "Hong Kong Stock Exchange"
+    xetra = "Frankfurt Stock Exchange"
+    sse = "Shanghai Stock Exchange"
+    asx = "Australian Securities Exchange"
+    nasdaq = "nasdaq Stock Exchange"
+    nyse = "New York Stock Exchange"
+    bmv = "Mexico Stock Exchange"
+    tsx = "Toronto Stock Exchange"
+    euronext = "euronext"
+
+
+class YahooTickerIdentifier(BaseModel):
+    symbol: str
+    exchange: str
+    exch_id: str
+
+
+class ExchangeTickers(BaseModel):
+    exchange: str
+    tickers: list[str]
+
+
+class ExchangeTickersInfo(BaseModel):
+    exchange: str
+    ticker: str
+    info: dict
+
+
+class TickerHistoryOutput(BaseModel):
+    Open: float
+    High: float
+    Low: float
+    Close: float
+    Volume: float
+    Dividends: float
+    Stock_Splits: float = Field(alias="Stock Splits")
+
+
+class ExchangeTickersHistory(BaseModel):
+    exchange: str
+    ticker: str
+    history: list[TickerHistoryOutput] | None = None
 
 
 class TickerHistoryQuery(BaseModel):
@@ -108,3 +141,29 @@ class TickerHistoryQuery(BaseModel):
         description="End date for historical data points. This is mutually exclusive with `period`",
         examples=["2024-02-01", "2021-01-31"],
     )
+
+
+class TickerInput(BaseModel):
+    ticker: list[str] = Field(
+        description="Desired company's `Ticker` symbol",
+        examples=[
+            ["infy", "tcs", "AKASH"],
+            ["AAPL", "msft"],
+        ],
+    )
+
+    def get_yahoo_aware_ticker(
+        self, exchange: StockExchange
+    ) -> list[YahooTickerIdentifier]:
+        """Get Ticker wrt to yahoo aware exchange."""
+        self.ticker = [
+            t.upper() for t in self.ticker
+        ]  # making sure that ticker symbol are always Upper case
+        return [
+            YahooTickerIdentifier(
+                symbol=t,
+                exchange=exchange.name,
+                exch_id=getattr(StockExchangeYahooIdentifier, exchange.name),
+            )
+            for t in self.ticker
+        ]
