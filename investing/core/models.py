@@ -1,6 +1,13 @@
-import re
-from datetime import datetime
+from datetime import date
 from enum import Enum
+
+from pydantic import BaseModel, Field
+
+
+class APITags(Enum):
+    root = "Root"
+    per_security = "Per Security"
+    bulk = "Bulk"
 
 
 class Period(Enum):
@@ -33,29 +40,130 @@ class Interval(Enum):
     THREE_MONTHS = "3mo"
 
 
-class DateString:
-    date_format = "%Y-%m-%d"
-    regex_pattern = r"^\d{4}-\d{2}-\d{2}$"
+class StockExchange(Enum):
+    nse = "nse"
+    bse = "bse"
+    tse = "tse"
+    lse = "lse"
+    hkex = "hkex"
+    xetra = "xetra"
+    sse = "sse"
+    asx = "asx"
+    nasdaq = "nasdaq"
+    nyse = "nyse"
+    bmv = "bmv"
+    tsx = "tsx"
+    euronext = "euronext"
 
-    def __init__(self, date_str: str):
-        if not self.is_valid_date(date_str):
-            raise ValueError(
-                f"Date string '{date_str}' is not in the yyyy-mm-dd format."
+
+class StockExchangeYahooIdentifier(Enum):
+    nse = ".NS"
+    bse = ".BO"
+    tse = ".T"
+    lse = ".L"
+    hkex = ".H"
+    xetra = ".X"
+    sse = ".S"
+    asx = ".A"
+    nasdaq = ".N"
+    nyse = ".Y"
+    bmv = ".M"
+    tsx = ".C"
+    euronext = ".F"
+
+
+class StockExchangeFullName(Enum):
+    nse = "National Stock Exchange of India"
+    bse = "Bombay Stock Exchange"
+    tse = "Tokyo Stock Exchange"
+    lse = "London Stock Exchange"
+    hkex = "Hong Kong Stock Exchange"
+    xetra = "Frankfurt Stock Exchange"
+    sse = "Shanghai Stock Exchange"
+    asx = "Australian Securities Exchange"
+    nasdaq = "nasdaq Stock Exchange"
+    nyse = "New York Stock Exchange"
+    bmv = "Mexico Stock Exchange"
+    tsx = "Toronto Stock Exchange"
+    euronext = "euronext"
+
+
+class YahooTickerIdentifier(BaseModel):
+    symbol: str
+    exchange: str
+    exch_id: str
+
+
+class ExchangeTickers(BaseModel):
+    exchange: str
+    tickers: list[str]
+
+
+class ExchangeTickersInfo(BaseModel):
+    exchange: str
+    ticker: str
+    info: dict
+
+
+class TickerHistoryOutput(BaseModel):
+    Open: float
+    High: float
+    Low: float
+    Close: float
+    Volume: float
+    Dividends: float
+    Stock_Splits: float = Field(alias="Stock Splits")
+
+
+class ExchangeTickersHistory(BaseModel):
+    exchange: str
+    ticker: str
+    history: list[TickerHistoryOutput] | None = None
+
+
+class TickerHistoryQuery(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    interval: Interval = Field(
+        Interval.ONE_DAY, description="Day interval between historical data points"
+    )
+    period: Period = Field(
+        Period.ONE_DAY,
+        description="Day period between historical data points. This is mutually exclusive with `start_date` and `end_date`",
+    )
+    start_date: date = Field(
+        None,
+        description="Start date for historical data points. This is mutually exclusive with `period`",
+        examples=["2024-01-01", "2020-12-31"],
+    )
+    end_date: date = Field(
+        None,
+        description="End date for historical data points. This is mutually exclusive with `period`",
+        examples=["2024-02-01", "2021-01-31"],
+    )
+
+
+class TickerInput(BaseModel):
+    ticker: list[str] = Field(
+        description="Desired company's `Ticker` symbol",
+        examples=[
+            ["infy", "tcs", "AKASH"],
+            ["AAPL", "msft"],
+        ],
+    )
+
+    def get_yahoo_aware_ticker(
+        self, exchange: StockExchange
+    ) -> list[YahooTickerIdentifier]:
+        """Get Ticker wrt to yahoo aware exchange."""
+        self.ticker = [
+            t.upper() for t in self.ticker
+        ]  # making sure that ticker symbol are always Upper case
+        return [
+            YahooTickerIdentifier(
+                symbol=t,
+                exchange=exchange.name,
+                exch_id=getattr(StockExchangeYahooIdentifier, exchange.name),
             )
-        self.date_str = date_str
-
-    @classmethod
-    def is_valid_date(cls, date_str: str) -> bool:
-        if not re.match(cls.regex_pattern, date_str):
-            return False
-        try:
-            datetime.strptime(date_str, cls.date_format)
-            return True
-        except ValueError:
-            return False
-
-    def __str__(self):
-        return self.date_str
-
-    def to_date(self):
-        return datetime.strptime(self.date_str, self.date_format).date()
+            for t in self.ticker
+        ]
