@@ -21,6 +21,16 @@ cd path/to/factor-investing
 poetry install
 ```
 
+4. **`Step 4`** - Setup the database
+ - Install Postgres database
+ - Create a database named `playground` or use [create database](investing/core/db/_database.sql) sql script
+ - Create a schema named `factor_investing` or use [create schema](investing/core/db/_schema.sql) sql script
+ - Create all tables using [create table](investing/core/db/_table.sql) sql script
+ - Create a .env file in the root directory and add the following environment variables
+   - USER
+   - PASSWORD
+  
+
 ## Usage
 
 1. **`Run the REST API`**
