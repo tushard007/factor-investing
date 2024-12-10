@@ -88,6 +88,10 @@ class StockExchangeFullName(Enum):
     euronext = "euronext"
 
 
+class DBTableName(Enum):
+    ticker_history = "factor_investing.ticker_history"
+
+
 class YahooTickerIdentifier(BaseModel):
     symbol: str
     exchange: str

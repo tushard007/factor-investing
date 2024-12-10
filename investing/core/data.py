@@ -1,3 +1,4 @@
+import logging
 from collections import namedtuple
 from dataclasses import dataclass
 from datetime import date
@@ -7,6 +8,8 @@ import polars as pl
 import yfinance as yf
 
 from investing.core.models import Interval, Period
+
+logger = logging.getLogger("factor-investing")
 
 
 @dataclass
@@ -71,12 +74,13 @@ class StockData:
                 interval=interval.value,
                 start=start,
                 end=end,
-                # group_by="ticker", # NOTE - not present in single `Ticker` object
+                raise_errors=True,
+                # group_by="ticker", # NOTE - not present in single `Tickers` object
             )
             setattr(
                 self._ticker_data,
                 self._remove_exchange_symbol(self.ticker),
-                pl.from_pandas(result),
+                pl.from_pandas(result, include_index=True),
             )
         else:
             result = self.ticker_handler.history(
@@ -85,12 +89,13 @@ class StockData:
                 start=start,
                 end=end,
                 group_by="ticker",
+                # raise_errors=True, # NOTE - currently not supported by `Tickers` object
             )
             for t in self.ticker:
                 setattr(
                     self._ticker_data,
                     self._remove_exchange_symbol(t),
-                    pl.from_pandas(result[t]),
+                    pl.from_pandas(result[t], include_index=True),
                 )
         return self._ticker_data
 
