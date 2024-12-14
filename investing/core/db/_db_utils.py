@@ -38,7 +38,5 @@ def prepare_ticker_history_table(df: pl.DataFrame, ticker: str) -> pl.DataFrame:
         pl.col("High").cast(pl.Float64).alias("high"),
         pl.col("Low").cast(pl.Float64).alias("low"),
         pl.col("Close").cast(pl.Float64).alias("close"),
-        pl.col("Volume").cast(pl.Float64).alias("volume"),
-        pl.col("Stock Splits").cast(pl.Float64).alias("stock_splits"),
     )
     return df.collect()
