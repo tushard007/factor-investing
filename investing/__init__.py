@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.traceback import install
 
-install(show_locals=True)
+# install(show_locals=True)
 logger = logging.getLogger("factor-investing")
 console_handler = RichHandler(
     markup=True,
