@@ -4,6 +4,7 @@ from datetime import date
 
 import polars as pl
 import yfinance as yf
+from stock_indicators.indicators.common.quote import Quote
 
 from investing.core.models import Interval, Period, StockExchangeYahooIdentifier
 
@@ -22,7 +23,7 @@ class StockData:
     """
 
     ticker: str | list[str]
-    exchage_market: StockExchangeYahooIdentifier | None = (
+    exchange_market: StockExchangeYahooIdentifier | None = (
         StockExchangeYahooIdentifier.nse
     )
 
@@ -40,7 +41,7 @@ class StockData:
     @property
     def yahoo_aware_ticker(self) -> str | list[str]:
         return self._add_exchange_symbol(
-            self._ticker_without_exchange, self.exchage_market.value
+            self._ticker_without_exchange, self.exchange_market.value
         )
 
     @property
@@ -124,3 +125,30 @@ class StockData:
             return symbol + exchange
         else:
             return [i + exchange for i in symbol]
+
+
+def polars_to_quote(data: pl.DataFrame) -> list[Quote]:
+    """
+    Create list of Quote objects from given polars dataframe.
+
+    Parameters
+    ----------
+    data: pl.DataFrame
+        Ticker dataframe in OHLCV (Open, High, Low, Close, Volume) format
+
+    Returns
+    -------
+    list[Quote]
+        Quote data that can be used to create indicator
+    """
+    return [
+        Quote(d, o, h, l, c, v)
+        for d, o, h, l, c, v in zip(
+            data["Date"],
+            data["Open"],
+            data["High"],
+            data["Low"],
+            data["Close"],
+            data["Volume"],
+        )
+    ]
