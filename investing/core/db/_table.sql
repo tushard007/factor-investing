@@ -11,3 +11,6 @@ create table if not exists factor_investing.ticker_history
 
 create index idx_key
     on factor_investing.ticker_history (key);
+
+create index idx_date
+    on factor_investing.ticker_history (date);
