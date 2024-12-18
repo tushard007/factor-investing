@@ -11,6 +11,14 @@ class IndicatorBase(ABC):
     data: pl.DataFrame | dict[str, pl.DataFrame]
     retain_source_column: list[str] | None
 
+    def __post_init__(self):
+        self._result_data: pl.DataFrame | dict[str, pl.DataFrame] = None
+        self._polt_data: pl.DataFrame | dict[str, pl.DataFrame] = None
+
+    @property
+    def plot_data(self):
+        return self._polt_data
+
     @abstractmethod
     def calculate_per_security(self): ...
 
