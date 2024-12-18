@@ -23,9 +23,9 @@ conn_string = (
 
 # Getting list of tickers to download
 BATCH_SIZE = 20
-tickers = pl.read_csv(current_path / "tickers_nse.csv").to_series().to_list()
+tickers = pl.read_csv(current_path / "tickers_nse_500.csv").to_series().to_list()
 tickers_batches = create_batches_list(tickers, BATCH_SIZE)
-logger.debug(f"total batches: {len(tickers)}")
+logger.debug(f"total tickers: {len(tickers)}")
 
 # getting latest date to run the insert job
 logger.info("getting last inserted date")
