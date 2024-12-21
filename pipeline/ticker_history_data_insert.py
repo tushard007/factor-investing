@@ -1,5 +1,5 @@
 import logging
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import polars as pl
@@ -55,9 +55,10 @@ for current_batch in alive_it(
         result = sd.get_ticker_history(period=Period.MAX, interval=Interval.ONE_DAY)
     else:
         TODAY = date.today()
-        logger.info(f"downloading from {last_run_date} to {TODAY}")
+        start_date = last_run_date + timedelta(days=1)
+        logger.info(f"downloading from {start_date} to {TODAY}")
         result = sd.get_ticker_history(
-            start=last_run_date, end=TODAY, interval=Interval.ONE_DAY
+            start=start_date, end=TODAY, interval=Interval.ONE_DAY
         )
 
     # preparing dataframe to insert data
