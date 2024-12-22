@@ -16,7 +16,7 @@ class SuperTrend(IndicatorBase):
         retain_source_column: list[str] | None = None,
     ):
         if retain_source_column is None:
-            retain_source_column = ["Close"]
+            retain_source_column = ["close"]
         self._result_data = None
         super().__init__(data, retain_source_column)
 
@@ -100,23 +100,22 @@ class SuperTrend(IndicatorBase):
             pl.col("upper").cast(pl.Float64).round(2),
             pl.col("lower").cast(pl.Float64).round(2),
         )
+        cols = result_df.columns
 
         # getting source data
         source_data = self.data[ticker] if ticker else self.data
 
         # performing join ops to retain source column
         if self.retain_source_column:
-            # Date column is reserved for join ops , so removing from here
-            if "Date" in self.retain_source_column:
-                self.retain_source_column.remove("Date")
+            # Date column is reserved for join ops
+            if "date" not in self.retain_source_column:
+                self.retain_source_column.append("date")
             # adding all the required column from parent source
-            source_select = source_data.with_columns(
-                [pl.col(c).round(2).alias(c.lower()) for c in self.retain_source_column]
-            )
-            # casting & renaming to date
-            source_select = source_select.with_columns(
-                pl.col("Date").cast(pl.Date).alias("date")
-            )
+            source_select = source_data.select(self.retain_source_column)
             # inner join
             result_df = result_df.join(source_select, on="date", how="inner")
-        return result_df
+            # re-arranging columns
+            self.retain_source_column.remove("date")
+            cols[1:1] = self.retain_source_column  # inserting after index 1
+
+        return result_df.select(cols)

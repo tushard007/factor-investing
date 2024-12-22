@@ -20,6 +20,8 @@ class StockData:
     ----------
         ticker : str | list[str]
             Ticker or list of ticker symbol the stock data.
+        exchange_market : StockExchangeYahooIdentifier, optional
+            Yahoo stock exchange identifier, by default StockExchangeYahooIdentifier.nse
     """
 
     ticker: str | list[str]
@@ -86,8 +88,8 @@ class StockData:
                 # progress=False,
                 # group_by="ticker",
             )
-            self._ticker_data[self._ticker_without_exchange] = pl.from_pandas(
-                result, include_index=True
+            self._ticker_data[self._ticker_without_exchange] = (
+                self._transform_history_result(result)
             )
 
         else:
@@ -104,8 +106,8 @@ class StockData:
             for ex_tick, tick in zip(
                 self.yahoo_aware_ticker, self._ticker_without_exchange
             ):
-                self._ticker_data[tick] = pl.from_pandas(
-                    result[ex_tick], include_index=True
+                self._ticker_data[tick] = self._transform_history_result(
+                    result[ex_tick]
                 )
 
         return self._ticker_data
@@ -126,6 +128,18 @@ class StockData:
         else:
             return [i + exchange for i in symbol]
 
+    @staticmethod
+    def _transform_history_result(data):
+        history = pl.from_pandas(data, include_index=True)
+        return history.select(
+            pl.col("Date").cast(pl.Date).alias("date"),
+            pl.col("Open").cast(pl.Float64).round(3).alias("open"),
+            pl.col("High").cast(pl.Float64).round(3).alias("high"),
+            pl.col("Low").cast(pl.Float64).round(3).alias("low"),
+            pl.col("Close").cast(pl.Float64).round(3).alias("close"),
+            pl.col("Volume").cast(pl.Float64).round(3).alias("volume"),
+        )
+
 
 def polars_to_quote(data: pl.DataFrame) -> list[Quote]:
     """
@@ -144,11 +158,11 @@ def polars_to_quote(data: pl.DataFrame) -> list[Quote]:
     return [
         Quote(d, o, h, l, c, v)
         for d, o, h, l, c, v in zip(
-            data["Date"],
-            data["Open"],
-            data["High"],
-            data["Low"],
-            data["Close"],
-            data["Volume"],
+            data["date"],
+            data["open"],
+            data["high"],
+            data["low"],
+            data["close"],
+            data["volume"],
         )
     ]
