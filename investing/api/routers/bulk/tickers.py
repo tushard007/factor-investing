@@ -14,6 +14,7 @@ from investing.core.models import (
     StockExchange,
     TickerHistoryQuery,
     TickerInput,
+    StockExchangeYahooIdentifier,
 )
 
 router = APIRouter(prefix="/api/bulk", tags=[APITags.bulk])
@@ -40,15 +41,16 @@ async def ticker_info_wrt_exchange(
 ):
     """Get information of all`Tickers` w.r.t. given `Exchange(s)`."""
     yahoo_tickers = ticker.get_yahoo_aware_ticker(exchange)
-    tickers = [f"{t.symbol}{t.exch_id}" for t in yahoo_tickers]
 
-    stock_data = StockData(tickers)
+    stock_data = StockData(
+        ticker.ticker, getattr(StockExchangeYahooIdentifier, exchange.name)
+    )
     result = stock_data.get_ticker_info()
     return [
         ExchangeTickersInfo(
             exchange=t.exchange.upper(),
             ticker=t.symbol.upper(),
-            info=getattr(result, t.symbol.upper()),
+            info=result[t.symbol.upper()],
         )
         for t in yahoo_tickers
     ]
@@ -67,9 +69,10 @@ async def ticker_history(
 ) -> list[ExchangeTickersHistory]:
     """Get stock history data for given `Ticker`"""
     yahoo_tickers = ticker.get_yahoo_aware_ticker(exchange)
-    tickers = [f"{t.symbol}{t.exch_id}" for t in yahoo_tickers]
 
-    stock_data = StockData(tickers)
+    stock_data = StockData(
+        ticker.ticker, getattr(StockExchangeYahooIdentifier, exchange.name)
+    )
     result = stock_data.get_ticker_history(
         period=query_param.period,
         interval=query_param.interval,
@@ -80,7 +83,7 @@ async def ticker_history(
         ExchangeTickersHistory(
             exchange=t.exchange.upper(),
             ticker=t.symbol.upper(),
-            history=getattr(result, t.symbol.upper()).to_dicts(),
+            history=result[t.symbol.upper()].to_dicts(),
         )
         for t in yahoo_tickers
     ]
