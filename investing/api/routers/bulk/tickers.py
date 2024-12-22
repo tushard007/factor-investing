@@ -6,6 +6,7 @@ from investing.api.dependency.utils import (
     yahoo_finance_aware_exchange_check,
 )
 from investing.core.data import StockData
+from investing.core.indicator.price_trend import SuperTrend
 from investing.core.models import (
     APITags,
     ExchangeTickers,
@@ -15,6 +16,8 @@ from investing.core.models import (
     TickerHistoryQuery,
     TickerInput,
     StockExchangeYahooIdentifier,
+    ExchangeTickersIndicatorSuperTrend,
+    SuperTrendIndicatorQuery,
 )
 
 router = APIRouter(prefix="/api/bulk", tags=[APITags.bulk])
@@ -86,4 +89,46 @@ async def ticker_history(
             history=result[t.symbol.upper()].to_dicts(),
         )
         for t in yahoo_tickers
+    ]
+
+
+@router.post(
+    "/{exchange}/indicator/super-trend",
+    response_model=list[ExchangeTickersIndicatorSuperTrend],
+)
+async def ticker_indicator_super_trend(
+    exchange: Annotated[
+        StockExchange,
+        Path(
+            description="Exchange symbol to which `Ticker` belongs",
+        ),
+    ],
+    ticker: TickerInput,
+    query_param: Annotated[SuperTrendIndicatorQuery, Query()],
+) -> list[dict]:
+    """SuperTrend attempts to determine the primary trend of Close prices by using
+    Average True Range (ATR) band thresholds. It can indicate a buy/ sell signal or a trailing stop
+    when the trend changes."""
+    yahoo_tickers = ticker.get_yahoo_aware_ticker(exchange)
+
+    stock_data = StockData(
+        ticker.ticker, getattr(StockExchangeYahooIdentifier, exchange.name)
+    )
+    history = stock_data.get_ticker_history(
+        period=query_param.period,
+        interval=query_param.interval,
+        start=query_param.start_date,
+        end=query_param.end_date,
+    )
+    indicator_data = SuperTrend(history, query_param.retain_source_column)
+    result = indicator_data.calculate_bulk(
+        lookback_periods=query_param.lookback_periods, multiplier=query_param.multiplier
+    )
+    return [
+        {
+            "exchange": ticker.exchange,
+            "ticker": ticker.symbol,
+            "indicator": result[ticker.symbol].to_dicts(),
+        }
+        for ticker in yahoo_tickers
     ]
