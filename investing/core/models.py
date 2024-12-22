@@ -1,7 +1,7 @@
 from datetime import date
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class APITags(Enum):
@@ -110,19 +110,39 @@ class ExchangeTickersInfo(BaseModel):
 
 
 class TickerHistoryOutput(BaseModel):
-    Open: float
-    High: float
-    Low: float
-    Close: float
-    Volume: float
-    Dividends: float
-    Stock_Splits: float = Field(alias="Stock Splits")
+    date: date
+    open: float | None = None
+    high: float | None = None
+    low: float | None = None
+    close: float | None = None
+    volume: float | None = None
+    # REVIEW - maybe required in future
+    # Dividends: float | None = None
+    # Stock_Splits: float | None = Field(None, alias="Stock Splits")
 
 
 class ExchangeTickersHistory(BaseModel):
     exchange: str
     ticker: str
     history: list[TickerHistoryOutput] | None = None
+
+
+class TickerIndicatorSuperTrendOutput(BaseModel):
+    date: date
+    # open: float | None = None
+    # high: float | None = None
+    # low: float | None = None
+    # close: float | None = None
+    # volume: float | None = None
+    super_trend: float | None = None
+    upper: float | None = None
+    lower: float | None = None
+
+
+class ExchangeTickersIndicatorSuperTrend(BaseModel):
+    exchange: str
+    ticker: str
+    indicator: list[dict] | None = None
 
 
 class TickerHistoryQuery(BaseModel):
@@ -144,6 +164,30 @@ class TickerHistoryQuery(BaseModel):
         None,
         description="End date for historical data points. This is mutually exclusive with `period`",
         examples=["2024-02-01", "2021-01-31"],
+    )
+
+    @model_validator(mode="after")
+    def check_start_end_date(self):
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValueError("Start date must be less than end date")
+        return self
+
+
+class SuperTrendIndicatorQuery(TickerHistoryQuery):
+    lookback_periods: int = Field(
+        10,
+        description="Number of periods (N) for the ATR evaluation. Must be greater than 1 and is "
+        "usually set between 7 and 14.",
+    )
+    multiplier: float = Field(
+        3,
+        description="Multiplier sets the ATR band width. Must be greater than 0 and is usually set "
+        "around 2 to 3.",
+    )
+    retain_source_column: list[str] | None = Field(
+        default=None,
+        description="List of column to retain from source ticker history data into indicator result",
+        examples=[["close"], ["open", "high"]],
     )
 
 

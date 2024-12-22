@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Path, Query
 
 from investing.api.dependency.utils import yahoo_finance_aware_ticker
 from investing.core.data import StockData
+from investing.core.indicator.price_trend import SuperTrend
 from investing.core.models import (
     APITags,
     ExchangeTickers,
@@ -11,6 +12,9 @@ from investing.core.models import (
     StockExchangeFullName,
     TickerHistoryQuery,
     YahooTickerIdentifier,
+    SuperTrendIndicatorQuery,
+    StockExchangeYahooIdentifier,
+    ExchangeTickersIndicatorSuperTrend,
 )
 
 router = APIRouter(prefix="/api/per-security", tags=[APITags.per_security])
@@ -42,9 +46,12 @@ async def ticker_information(
     ticker: Annotated[YahooTickerIdentifier, Depends(yahoo_finance_aware_ticker)],
 ) -> dict:
     """Get given `Ticker` information"""
-    stock_data = StockData(f"{ticker.symbol}{ticker.exch_id}")
+    # getting data
+    stock_data = StockData(
+        ticker.symbol, getattr(StockExchangeYahooIdentifier, ticker.exchange.lower())
+    )
     result = stock_data.get_ticker_info()
-    return getattr(result, ticker.symbol)
+    return result[ticker.symbol]
 
 
 @router.get("/{exchange}/{ticker}/history")
@@ -53,7 +60,10 @@ async def ticker_history(
     query_param: Annotated[TickerHistoryQuery, Query()],
 ) -> ExchangeTickersHistory:
     """Get stock history data for given `Ticker`"""
-    stock_data = StockData(f"{ticker.symbol}{ticker.exch_id}")
+    # getting data
+    stock_data = StockData(
+        ticker.symbol, getattr(StockExchangeYahooIdentifier, ticker.exchange.lower())
+    )
     result = stock_data.get_ticker_history(
         period=query_param.period,
         interval=query_param.interval,
@@ -63,5 +73,39 @@ async def ticker_history(
     return ExchangeTickersHistory(
         ticker=ticker.symbol,
         exchange=ticker.exchange,
-        history=getattr(result, ticker.symbol).to_dicts(),
+        history=result[ticker.symbol].to_dicts(),
     )
+
+
+@router.get(
+    "/{exchange}/{ticker}/indicator/super-trend",
+    response_model=ExchangeTickersIndicatorSuperTrend,
+)
+async def ticker_indicator_super_trend(
+    ticker: Annotated[YahooTickerIdentifier, Depends(yahoo_finance_aware_ticker)],
+    query_param: Annotated[SuperTrendIndicatorQuery, Query()],
+) -> dict:
+    """SuperTrend attempts to determine the primary trend of Close prices by using
+    Average True Range (ATR) band thresholds. It can indicate a buy/ sell signal or a trailing stop
+    when the trend changes."""
+    # getting data
+    stock_data = StockData(
+        ticker.symbol, getattr(StockExchangeYahooIdentifier, ticker.exchange.lower())
+    )
+    history = stock_data.get_ticker_history(
+        period=query_param.period,
+        interval=query_param.interval,
+        start=query_param.start_date,
+        end=query_param.end_date,
+    )
+    indicator_data = SuperTrend(
+        history[ticker.symbol], query_param.retain_source_column
+    )
+    result = indicator_data.calculate_per_security(
+        lookback_periods=query_param.lookback_periods, multiplier=query_param.multiplier
+    )
+    return {
+        "exchange": ticker.exchange,
+        "ticker": ticker.symbol,
+        "indicator": result.to_dicts(),
+    }
