@@ -6,7 +6,7 @@ from adbc_driver_postgresql import dbapi
 from dotenv import dotenv_values
 from fastapi import FastAPI
 
-from investing.api.routers import bulk, per_security
+from investing.api.routers import bulk, per_security, dataset
 from investing.core.models import APITags
 
 logger = logging.getLogger("factor-investing")
@@ -38,3 +38,4 @@ async def root():
 
 app.include_router(per_security.tickers_router)
 app.include_router(bulk.tickers_router)
+app.include_router(dataset.indicators_router)
