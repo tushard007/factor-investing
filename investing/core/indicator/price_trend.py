@@ -81,7 +81,9 @@ class SuperTrend(IndicatorBase):
 
     def _unit_result(self, quote_data, lookback_periods, multiplier, ticker=None):
         # calculating indicator specific results
-        result = indicators.get_super_trend(quote_data, lookback_periods, multiplier)
+        result = indicators.get_super_trend(
+            quote_data, lookback_periods, multiplier
+        ).condense()
         result_df = pl.DataFrame(
             [
                 {

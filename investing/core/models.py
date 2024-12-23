@@ -8,6 +8,7 @@ class APITags(Enum):
     root = "Root"
     per_security = "Per Security"
     bulk = "Bulk"
+    dataset = "Dataset"
 
 
 class Period(Enum):
@@ -90,6 +91,11 @@ class StockExchangeFullName(Enum):
 
 class DBTableName(Enum):
     ticker_history = "factor_investing.ticker_history"
+
+
+class SuperTrendRecentNDatasetFormat(Enum):
+    detail = "detail"
+    ticker_only = "tickers-only"
 
 
 class YahooTickerIdentifier(BaseModel):
@@ -188,6 +194,19 @@ class SuperTrendIndicatorQuery(TickerHistoryQuery):
         default=None,
         description="List of column to retain from source ticker history data into indicator result",
         examples=[["close"], ["open", "high"]],
+    )
+
+
+class SuperTrendRecentNDatasetQuery(SuperTrendIndicatorQuery):
+    recent_n: int = Field(
+        5,
+        description="Number of recent N days to evaluate Lower band v/s SuperTrend. Must be greater than 0.",
+        ge=0,
+        examples=[[5], [10]],
+    )
+    result_format: SuperTrendRecentNDatasetFormat = Field(
+        SuperTrendRecentNDatasetFormat.detail,
+        description="Format of the output dataset. `detail` format includes complete table data. `ticker_only` format only includes ticker symbol.",
     )
 
 
